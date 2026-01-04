@@ -2,7 +2,6 @@ import torch
 import matplotlib.pyplot as plt
 from torch import nn, optim
 import torch.nn.functional as F
-from torchmetrics.classification import ConfusionMatrix
 
 class EEGNet(nn.Module):
     def __init__(self,C,T,R,N,F1 = 4, D = 2, P = 0.5):
@@ -39,7 +38,7 @@ class EEGNet(nn.Module):
         x = self.dense(x)      # maxnorm = 0.25
         return x
 
-def regular_train(C, T, R, N, train_loader, test_loader, epochs = 20, cross = False, classvec = None):
+def regular_train(C, T, R, N, train_loader, test_loader, epochs = 20, cross = False):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     p = 0.25 if cross else 0.5
     model = EEGNet(C,T,R,N,P=p).to(device)
@@ -61,11 +60,6 @@ def regular_train(C, T, R, N, train_loader, test_loader, epochs = 20, cross = Fa
         f"Train loss {train_loss:.4f}, acc {train_acc:.4f} | "
         f"Test loss {test_loss:.4f}, acc {test_acc:.4f}")
     
-    y_true = []
-    y_pred = []
-    confmat = ConfusionMatrix(task="multiclass", num_classes=N)
-    
-
     fig, axs = plt.subplots(1,2)
     axs[0].plot(range(epochs), train_hist_loss, label="Train Loss")
     axs[0].plot(range(epochs), test_hist_loss, label="Test Loss")
@@ -75,18 +69,6 @@ def regular_train(C, T, R, N, train_loader, test_loader, epochs = 20, cross = Fa
     axs[1].plot(range(epochs), test_hist_acc, label="Test Accuracy")
     axs[1].legend()
     fig.show()
-
-    for X, y in test_loader:
-        X = X.to(device)
-        y = y.to(device)
-
-        logits = model(X)
-        preds = torch.argmax(logits, dim=1)
-
-        confmat.update(preds.cpu(), y.cpu())
-
-    confmatrix = confmat.compute()
-    plot_confusion_matrix(confmatrix, classvec)
 
 def apply_maxnorm(model, maxnorm_conv=1.0, maxnorm_dense=0.25):
     with torch.no_grad():
@@ -101,7 +83,6 @@ def apply_maxnorm(model, maxnorm_conv=1.0, maxnorm_dense=0.25):
         w.mul_(desired / (1e-8 + norms))
 
 def train(model, train_loader, criterion, optimizer, device):
-    torch.cuda.empty_cache()
     model.train()
     total_loss = 0
     correct = 0
@@ -128,7 +109,6 @@ def train(model, train_loader, criterion, optimizer, device):
 
 @torch.no_grad()
 def test(model, test_loader, criterion, device):
-    torch.cuda.empty_cache()
     model.eval()
     total_loss = 0
     correct = 0
@@ -147,29 +127,3 @@ def test(model, test_loader, criterion, device):
     avg_loss = total_loss / len(test_loader)
     acc = correct / total
     return avg_loss, acc
-
-def plot_confusion_matrix(confmatrix, class_names=None):
-    plt.figure(figsize=(6, 5))
-    plt.imshow(confmatrix, interpolation='nearest')
-    plt.title("Confusion Matrix")
-    plt.colorbar()
-
-    num_classes = confmatrix.shape[0]
-
-    # Tick labels
-    if class_names is None:
-        class_names = [str(i) for i in range(num_classes)]
-
-    plt.xticks(range(num_classes), class_names, rotation=45)
-    plt.yticks(range(num_classes), class_names)
-
-    # Print values inside cells
-    for i in range(num_classes):
-        for j in range(num_classes):
-            plt.text(j, i, str(confmatrix[i, j].item()),
-                     ha="center", va="center", color="white" if confmatrix[i, j] > confmatrix.max()/2 else "black")
-
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
-    plt.tight_layout()
-    plt.show()
