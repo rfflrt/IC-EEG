@@ -6,6 +6,7 @@ Summarizing the contents of the folders:
 
 - Binary: contains experiments of the EEGNet on the THINGS-EEG, preprocessed by Gifford, on binary classification.
 - K-Class: contains experiments of the EEGNet on the THINGS-EEG, preprocessed by Gifford, on multiclass and multisubject classification.
+- Riemann: contains files with riemann-based classification.
 
 Experiments and advances are most surely documented and commented on my Github page.
 
