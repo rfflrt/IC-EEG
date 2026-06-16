@@ -1,6 +1,6 @@
 import numpy as np
 
-def generatetrain(c1, c2, src_path="/home/rffl/scratch/THINGS-EEG/preprocessed/sub-02/preprocessed_eeg_test.npy",
+def generatetrain(c1, c2, src_path="/home/rffl/scratch/THINGS-EEG/preprocessed/sub-03/preprocessed_eeg_test.npy",
                   out_path="./bindatatrain.npy"):
     
     data = np.load(src_path, allow_pickle=True).item()["preprocessed_eeg_data"]
